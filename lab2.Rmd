@@ -1,0 +1,68 @@
+---
+title: "lab_2_spotify"
+author: "Rohit Menon"
+date: "2023-12-03"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+\newpage
+\setcounter{page}{0}
+```{r load packages and set options, include=FALSE}
+library(tidyverse)
+library(lmtest)
+library(psych)
+library(sandwich)
+library(stargazer)
+knitr::opts_chunk$set(echo=FALSE, message=FALSE)
+```
+
+```{r get robust ses, include=FALSE}
+rse <- function(model) { 
+  sqrt(diag(vcovHC(model)))
+  }
+```
+
+```{r spotify}
+spotify <- read.csv('./data/spotify_songs.csv')
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r data wrangling, include=FALSE}
+
+spotify %>%
+  filter(playlist_genre == 'pop') %>%
+  select(track_artist) %>%
+  distinct()
+
+#new <- spotify[spotify$track_popularity > 80, ]
+
+```
+
+```{lol results='asis'}
+
+selected_features <- c("key", "loudness", "mode", "acousticness")
+selected_data <- spotify[, selected_features, drop = FALSE]
+
+summary_table <- describe(selected_data)
+summary_table %>%
+  select(mean, sd, min, max)
+
+stargazer(summary_table, title = "Summary Statistics on Selected Song Attributes", header = FALSE, type="latex")
+```
+
+
+```{r results='asis'}
+spotify_model1 <- lm(track_popularity ~ key + tempo, data = spotify)
+spotify_model2 <- lm(track_popularity ~ key + tempo + loudness, data = spotify)
+spotify_model3 <- lm(track_popularity ~ key + tempo + loudness + mode, data = spotify)
+spotify_model4 <- lm(track_popularity ~ key + tempo + loudness + mode + acousticness, data = spotify)
+
+output <- stargazer(spotify_model1, spotify_model2, spotify_model3, spotify_model4, title = "Linear Regression Model Song Popularity", header = FALSE, type = "latex", se = list(rse(spotify_model1), rse(spotify_model2), rse(spotify_model3), rse(spotify_model4)))
+
+```
+
